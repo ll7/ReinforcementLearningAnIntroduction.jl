@@ -1,11 +1,13 @@
 ### A Pluto.jl notebook ###
-# v0.12.18
+# v0.16.4
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 03c25682-4e46-11eb-1b97-33699faa080f
 begin
+	import Pkg
+	Pkg.activate(Base.current_project())
 	using ReinforcementLearning
 	using Plots
 	using Flux
@@ -48,14 +50,14 @@ end
 heatmap((!iscliff).(CartesianIndices((NX, NY))); yflip = true)
 
 # ╔═╡ 4e8e67ac-4e51-11eb-0742-ad46e685a921
-Base.@kwdef mutable struct CliffWalkingEnv <: AbstractEnv
-    position::CartesianIndex{2} = Start
-end
-
-# ╔═╡ c3ab43c0-4e51-11eb-319f-e94b2fad261e
-function (env::CliffWalkingEnv)(a::Int)
-    x, y = Tuple(env.position + LRUD[a])
-    env.position = CartesianIndex(min(max(x, 1), NX), min(max(y, 1), NY))
+begin
+	Base.@kwdef mutable struct CliffWalkingEnv <: AbstractEnv
+		position::CartesianIndex{2} = Start
+	end
+	function (env::CliffWalkingEnv)(a::Int)
+		x, y = Tuple(env.position + LRUD[a])
+		env.position = CartesianIndex(min(max(x, 1), NX), min(max(y, 1), NY))
+	end
 end
 
 # ╔═╡ af4da300-4e51-11eb-3821-0522243eea6a
@@ -113,7 +115,7 @@ function repeated_run(α, method, N, n_episode, is_mean=true)
 	env = CliffWalkingEnv()
 	rewards = []
 	for _ in 1:N
-		h = TotalRewardPerEpisode()
+		h = TotalRewardPerEpisode(;is_display_on_exit=false)
 		run(
 			create_agent(α, method),
 			env, 
@@ -127,7 +129,7 @@ end
 
 # ╔═╡ 33ab57f2-4e55-11eb-3b53-89492ca4b5f6
 begin
-	p = plot(legend=:bottomright)
+	p = plot(legend=:bottomright, xlabel="Episodes", ylabel="Sum of rewards during episode")
 	plot!(p, repeated_run(0.5, :SARS, 1000, 500, false), label="QLearning")
 	plot!(p, repeated_run(0.5, :SARSA, 1000, 500, false), label="SARSA")
 	p
@@ -136,7 +138,7 @@ end
 # ╔═╡ a9f81264-4e5b-11eb-2634-cb2179ea9e6b
 begin
 	A = 0.1:0.05:0.95
-	fig_6_3 = plot(;legend=:bottomright)
+	fig_6_3 = plot(;legend=:bottomright, xlabel="α", ylabel="Sum of rewards per episode")
 
 	plot!(fig_6_3, A, [repeated_run(α, :SARS, 100, 100) for α in A], linestyle=:dash ,markershape=:rect, label="Interim Q")
 	plot!(fig_6_3, A, [repeated_run(α, :SARSA, 100, 100) for α in A], linestyle=:dash, markershape=:dtriangle, label="Interim SARSA")
@@ -156,7 +158,6 @@ end
 # ╠═89c9010e-4e4e-11eb-2d97-05ee771fd5f4
 # ╠═eb5e16fc-4e4e-11eb-0ce7-5b5510c7924a
 # ╠═4e8e67ac-4e51-11eb-0742-ad46e685a921
-# ╠═c3ab43c0-4e51-11eb-319f-e94b2fad261e
 # ╠═af4da300-4e51-11eb-3821-0522243eea6a
 # ╠═94e72e6e-4e51-11eb-25e4-81c253969de6
 # ╠═be36d904-4e51-11eb-1ead-1d89513b68e5

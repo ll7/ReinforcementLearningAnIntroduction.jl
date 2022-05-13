@@ -1,11 +1,13 @@
 ### A Pluto.jl notebook ###
-# v0.12.18
+# v0.15.1
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 4b149ad2-5bca-11eb-0104-0be8dd786177
 begin
+	import Pkg
+	Pkg.activate(Base.current_project())
 	using ReinforcementLearning
 	using Flux
 	using Statistics
@@ -197,21 +199,22 @@ end
 
 # ╔═╡ f29c9f18-5bcd-11eb-05b5-c72249e02975
 begin
-	fig_8_8 = plot(legend=:bottomright)
+	fig_8_8 = plot(legend=:bottomright, xlabel="Computation time", ylabel="Value of start state under greedy policy")
 	for b in [1, 3, 10]
 		plot!(fig_8_8, mean(sweep(;b=b) for _ in 1:200), label="uniform b=$b")
-		plot!(fig_8_8, mean(on_policy(;b=b) for _ in 1:200), label="on policy b=$b")
+		plot!(fig_8_8, mean(on_policy(;b=b) for _ in 1:200), label="on-policy b=$b")
 	end
 	fig_8_8
 end
 
 # ╔═╡ 8cba1ec8-5bcf-11eb-32c3-f38dee82139a
 begin
-	fig_8_8_2 = plot(legend=:bottomright)
+	fig_8_8_2 = plot(legend=:bottomright, xlabel="Computation time", ylabel="Value of start state under greedy policy")
 	plot!(fig_8_8_2, mean(sweep(;ns=10_000) for _ in 1:200), label="uniform")
-	plot!(fig_8_8_2, mean(on_policy(;ns=10_000) for _ in 1:200), label="on_policy")
+	plot!(fig_8_8_2, mean(on_policy(;ns=10_000) for _ in 1:200), label="on-policy")
 	fig_8_8_2
 end
+
 
 # ╔═╡ Cell order:
 # ╟─48977b2e-5bc9-11eb-2ad7-958ca5fd2ecb

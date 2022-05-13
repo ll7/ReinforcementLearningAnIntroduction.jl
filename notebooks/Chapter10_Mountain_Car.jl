@@ -1,11 +1,13 @@
 ### A Pluto.jl notebook ###
-# v0.12.18
+# v0.16.4
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ c2e4a0d0-5cae-11eb-199f-3b8bc7ca4867
 begin
+	import Pkg
+	Pkg.activate(Base.current_project())
 	using ReinforcementLearning
 	using Flux
 	using Statistics
@@ -41,7 +43,7 @@ begin
 		inds::LinearIndices{N,NTuple{N,Base.OneTo{Int}}}
 	end
 
-	Tiling(ranges::AbstractRange...) =Tiling(
+	Tiling(ranges::AbstractRange...) = Tiling(
 		ranges,
 		LinearIndices(Tuple(length(r) - 1 for r in ranges))
 	)
@@ -78,9 +80,9 @@ The rest parts are simple, we initialize `agent` and `env`, then roll out experi
 
 # ╔═╡ 214a577a-5cb0-11eb-356b-ab06ad454eef
 function create_env_agent(α=2e-4, n=0)
-    env = StateOverriddenEnv(
+    env = StateTransformedEnv(
         MountainCarEnv(;max_steps=10000),
-        s -> sparse(map(t -> encode(t, s), tilings), 1:8, ones(8), 81, 8) |> vec
+        state_mapping=s -> sparse(map(t -> encode(t, s), tilings), 1:8, ones(8), 81, 8) |> vec
     )
 
     agent = Agent(
@@ -113,7 +115,7 @@ function show_approximation(n)
     env, agent = create_env_agent()
     run(agent, env, StopAfterEpisode(n))
     [
-		agent.policy.learner.approximator(env.f([p, v])) |> maximum
+		agent.policy.learner.approximator(env.state_mapping([p, v])) |> maximum
         for p in X, v in Y
 	]
 end
@@ -122,42 +124,45 @@ end
 n = 10
 
 # ╔═╡ 4905a328-5cb0-11eb-03f1-0f6f27350ade
-plot(X, Y, -show_approximation(n), linetype=:wireframe)
+plot(X, Y, -show_approximation(n), linetype=:wireframe,
+	xlabel="Position", ylabel="Velocity", zlabel="cost-to-go", title="Episode $n")
 
 # ╔═╡ 68779ca2-5cb0-11eb-11e4-9fdb4ea0989f
 begin
-	fig_10_2 = plot(legend=:topright)
+	fig_10_2 = plot(legend=:topright, xlabel="Episode", ylabel="Avg. steps per episode")
 	n_runs = 5  # quite slow here, need revisit
 	for α in [0.1/8, 0.2/8, 0.5/8]
-		avg_steps_per_episode = zeros(500)
+		avg_steps_per_episode = zeros(501)
 		for _ in 1:n_runs
-			env, agent = create_env_agent(α)
+			local env, agent = create_env_agent(α)
 			hook = StepsPerEpisode()
 			run(agent, env, StopAfterEpisode(500; is_show_progress=false),hook)
 			avg_steps_per_episode .+= hook.steps
 		end
-		plot!(fig_10_2, avg_steps_per_episode ./ n_runs, yscale=:log10, label="α=$α")
+		plot!(fig_10_2, avg_steps_per_episode[1:end-1] ./ n_runs, yscale=:log10, label="α=$α")
 	end
 	fig_10_2
 end
 
+# ╔═╡ 23790cca-04cc-4c50-984c-1d8ed4a0d11d
+function run_once(α, n;is_reduce=true, n_episode=50)
+	env, agent = create_env_agent(α, n)
+	hook = StepsPerEpisode()
+	run(agent, env, StopAfterEpisode(n_episode; is_show_progress=false),hook)
+	is_reduce ? mean(hook.steps) : hook.steps
+end
+
 # ╔═╡ 79e4a002-5cb0-11eb-049a-db8707d6c400
 begin
-	function run_once(α, n;is_reduce=true, n_episode=50)
-		env, agent = create_env_agent(α, n)
-		hook = StepsPerEpisode()
-		run(agent, env, StopAfterEpisode(n_episode; is_show_progress=false),hook)
-		is_reduce ? mean(hook.steps) : hook.steps
-	end
-	fig_10_3 = plot()
-	plot!(fig_10_3, mean(run_once(0.5/8, 1; is_reduce=false, n_episode=500) for _ in 1:10), yscale=:log10)
-	plot!(fig_10_3, mean(run_once(0.3/8, 8; is_reduce=false, n_episode=500) for _ in 1:10), yscale=:log10)
+	fig_10_3 = plot(xlabel="Episode", ylabel="Avg. steps per episode")
+	plot!(fig_10_3, mean(run_once(0.5/8, 1; is_reduce=false, n_episode=500)[1:end-1] for _ in 1:10), yscale=:log10, label="n=1")
+	plot!(fig_10_3, mean(run_once(0.3/8, 8; is_reduce=false, n_episode=500)[1:end-1] for _ in 1:10), yscale=:log10, label="n=8")
 	fig_10_3
 end
 
 # ╔═╡ 832c5ce0-5cb0-11eb-06f6-4f9ad5b707a2
 begin
-	fig_10_4 = plot(legend=:topright)
+	fig_10_4 = plot(legend=:topright, xlabel="α × number of tilings ($ntilings)", ylabel="Avg. steps per episode")
 	for (A, n) in [(0.4:0.1:1.7, 1), (0.3:0.1:1.6, 2), (0.2:0.1:1.4, 4), (0.2:0.1:0.9, 8), (0.2:0.1:0.7, 16)]
 		plot!(fig_10_4, A, [mean(run_once(α/8, n) for _ in 1:5) for α in A], label="n = $n")
 	end
@@ -181,5 +186,6 @@ end
 # ╠═4ba11496-5cb0-11eb-202c-7f2baba059bf
 # ╠═4905a328-5cb0-11eb-03f1-0f6f27350ade
 # ╠═68779ca2-5cb0-11eb-11e4-9fdb4ea0989f
+# ╠═23790cca-04cc-4c50-984c-1d8ed4a0d11d
 # ╠═79e4a002-5cb0-11eb-049a-db8707d6c400
 # ╠═832c5ce0-5cb0-11eb-06f6-4f9ad5b707a2

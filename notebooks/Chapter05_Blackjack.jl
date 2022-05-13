@@ -1,11 +1,13 @@
 ### A Pluto.jl notebook ###
-# v0.14.7
+# v0.16.4
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 2697620e-5e5e-11eb-3568-ab2248561ebd
 begin
+	import Pkg
+	Pkg.activate(Base.current_project())
 	using ReinforcementLearning
 	using Flux
 	using Statistics
@@ -102,16 +104,16 @@ state_space(game)
 
 # ╔═╡ dfebc2b8-5e5e-11eb-2030-4766a533b521
 md"""
-As you can see, the `state_space` of the **Blackjack** environment has 3 discrete features. To reuse the tabular algorithms in `ReinforcementLearning.jl`, we need to flatten the state and wrap it in a `StateOverriddenEnv`.
+As you can see, the `state_space` of the **Blackjack** environment has 3 discrete features. To reuse the tabular algorithms in `ReinforcementLearning.jl`, we need to flatten the state and wrap it in a `StateTransformedEnv`.
 """
 
 # ╔═╡ 651a9d74-5e5f-11eb-251d-1bab0d8d3384
 STATE_MAPPING = s ->  LinearIndices((31, 10, 2))[CartesianIndex(s)]
 
 # ╔═╡ 6f95e1a0-5e5f-11eb-1203-21668fdb4d1d
-world = StateOverriddenEnv(
+world = StateTransformedEnv(
     BlackjackEnv(),
-    STATE_MAPPING
+    state_mapping=STATE_MAPPING
 )
 
 # ╔═╡ 82391e12-5e5f-11eb-1eb9-f1239a781589
@@ -257,9 +259,9 @@ md"""
 """
 
 # ╔═╡ d874fc22-5e61-11eb-2fee-37742f910182
-static_env = StateOverriddenEnv(
+static_env = StateTransformedEnv(
     BlackjackEnv(;init=([1,2], [2])),
-    STATE_MAPPING
+    state_mapping=STATE_MAPPING
 );
 
 # ╔═╡ e31a1da6-5e61-11eb-09ac-1f29247434ca

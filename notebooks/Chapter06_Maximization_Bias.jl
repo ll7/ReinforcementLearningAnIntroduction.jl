@@ -1,11 +1,13 @@
 ### A Pluto.jl notebook ###
-# v0.12.18
+# v0.16.4
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 9edb35ce-4ea7-11eb-353f-53459c337880
 begin
+	import Pkg
+	Pkg.activate(Base.current_project())
 	using ReinforcementLearning
 	using Statistics
 	using Flux
@@ -20,18 +22,35 @@ In example 6.7, authors introduced a MDP problem to compare the different perfor
 """
 
 # ╔═╡ 172236ac-4ea8-11eb-1393-5bc3683bf6b0
-"""
-states:
-1:A
-2:B
-3:terminal
-actions:
-1: left
-2: right
-"""
-Base.@kwdef mutable struct MaximizationBiasEnv <: AbstractEnv
-    position::Int = 1
-    reward::Float64 = 0.0
+begin
+	"""
+	states:
+	1:A
+	2:B
+	3:terminal
+	actions:
+	1: left
+	2: right
+	"""
+	Base.@kwdef mutable struct MaximizationBiasEnv <: AbstractEnv
+		position::Int = 1
+		reward::Float64 = 0.0
+	end
+	function (env::MaximizationBiasEnv)(a::Int)
+		if env.position == 1
+			if a == 1
+				env.position = 2
+				env.reward = 0.0
+			else
+				env.position = 3
+				env.reward = 0.0
+			end
+		elseif env.position == 2
+			env.position = 3
+			env.reward = randn() - 0.1
+		end
+		nothing
+	end
 end
 
 # ╔═╡ 19876a70-4ea8-11eb-2b70-9d48875f7ae7
@@ -70,23 +89,6 @@ function RLBase.legal_action_space_mask(env::MaximizationBiasEnv)
     m
 end
 
-# ╔═╡ 3575fd14-4ea8-11eb-37dc-6d6f525e6aa1
-function (env::MaximizationBiasEnv)(a::Int)
-    if env.position == 1
-        if a == 1
-            env.position = 2
-            env.reward = 0.0
-        else
-            env.position = 3
-            env.reward = 0.0
-        end
-    elseif env.position == 2
-        env.position = 3
-        env.reward = randn() - 0.1
-    end
-    nothing
-end
-
 # ╔═╡ 3a674788-4ea8-11eb-1931-b39142fffb47
 function RLBase.reset!(env::MaximizationBiasEnv)
     env.position = 1
@@ -120,15 +122,15 @@ To calculate the percentage of chosing `LEFT` action in the first step, we'll cr
 """
 
 # ╔═╡ 6f798d14-4ea8-11eb-2825-8f6f17ff4f05
-Base.@kwdef mutable struct CountOfLeft <: AbstractHook
-    counts::Vector{Bool} = []
-end
-
-# ╔═╡ af12feec-4ea8-11eb-2b21-ff2059ec5fb3
-function (f::CountOfLeft)(::PreActStage, agent, env, action)
-    if state(env) == 1
-        push!(f.counts, action == LEFT)
-    end
+begin
+	Base.@kwdef mutable struct CountOfLeft <: AbstractHook
+		counts::Vector{Bool} = []
+	end
+	function (f::CountOfLeft)(::PreActStage, agent, env, action)
+		if state(env) == 1
+			push!(f.counts, action == LEFT)
+		end
+	end
 end
 
 # ╔═╡ d026cbb8-4ea8-11eb-29a2-dd75efe64466
@@ -188,7 +190,7 @@ begin
 		run(create_double_Q_agent(), world, StopAfterEpisode(300),hook)
 		push!(DQ_stats, hook.counts)
 	end
-	plot(mean(DQ_stats), legend=:topright, label="double q")
+	plot(mean(DQ_stats)*100, legend=:topright, label="double q", xlabel="Episodes", ylabel="% left actions from A")
 	
 	Q_stats = []
 	for _ in 1:1000
@@ -196,9 +198,10 @@ begin
 		run(create_Q_agent(), world, StopAfterEpisode(300),hook)
 		push!(Q_stats, hook.counts)
 	end
-	plot!(mean(Q_stats), legend=:topright, label="q")
-	hline!([0.05], linestyle=:dash, label="optimal")
+	plot!(mean(Q_stats)*100, legend=:topright, label="q")
+	hline!([5], linestyle=:dash, label="optimal")
 end
+
 
 # ╔═╡ Cell order:
 # ╟─6ce0a200-4ea7-11eb-123c-73e3a260351c
@@ -211,7 +214,6 @@ end
 # ╠═2c06d25a-4ea8-11eb-26e3-01d81d714859
 # ╠═2e11adfc-4ea8-11eb-02bc-d550994774f8
 # ╠═3148b560-4ea8-11eb-0fc1-f77efb282ba4
-# ╠═3575fd14-4ea8-11eb-37dc-6d6f525e6aa1
 # ╠═3a674788-4ea8-11eb-1931-b39142fffb47
 # ╠═3ec32b6c-4ea8-11eb-1575-319c528b4f02
 # ╠═4127acde-4ea8-11eb-0e47-7d82bb5cb310
@@ -221,7 +223,6 @@ end
 # ╠═657eca7c-4ea8-11eb-3c42-b1a3085f6129
 # ╟─8d15e872-4ea8-11eb-2fc2-7f3c4a90a85a
 # ╠═6f798d14-4ea8-11eb-2825-8f6f17ff4f05
-# ╠═af12feec-4ea8-11eb-2b21-ff2059ec5fb3
 # ╟─d026cbb8-4ea8-11eb-29a2-dd75efe64466
 # ╠═ea42c3c6-4ea8-11eb-1d82-0566785eeef3
 # ╠═eccb09aa-4ea8-11eb-08a0-2f6344c38669

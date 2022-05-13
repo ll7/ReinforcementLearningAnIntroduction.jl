@@ -1,11 +1,13 @@
 ### A Pluto.jl notebook ###
-# v0.12.18
+# v0.16.4
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 94075d98-522a-11eb-00bd-8709e96862e9
 begin
+	import Pkg
+	Pkg.activate(Base.current_project())
 	using ReinforcementLearning
 	using Statistics
 	using Flux
@@ -32,13 +34,13 @@ Again, we first define a hook to calculate RMS
 """
 
 # ╔═╡ efe41c64-522a-11eb-20d9-f5b14b5c138c
-struct RecordRMS <: AbstractHook
-    rms::Vector{Float64}
-    RecordRMS() = new([])
+begin
+	struct RecordRMS <: AbstractHook
+		rms::Vector{Float64}
+		RecordRMS() = new([])
+	end
+	(f::RecordRMS)(::PostEpisodeStage, agent, env) = push!(f.rms, sqrt(mean((agent.policy.learner.approximator.table[2:end-1] - true_values[2:end-1]).^2)))
 end
-
-# ╔═╡ f567037c-522a-11eb-263b-615400c1b9d5
-(f::RecordRMS)(::PostEpisodeStage, agent, env) = push!(f.rms, sqrt(mean((agent.policy.learner.approximator.table[2:end-1] - true_values[2:end-1]).^2)))
 
 # ╔═╡ f7443b06-522a-11eb-3801-5525ecada397
 function run_once(α, n)
@@ -62,7 +64,7 @@ end
 # ╔═╡ 0b1b0448-522b-11eb-0264-9131eabe2525
 begin
 	A = 0.:0.05:1.0
-	p = plot()
+	p = plot(xlabel="α", ylabel="Average RMS error")
 	for n in [2^i for i in 0:9]
 		avg_rms = Float64[]
 		for α in A
@@ -87,6 +89,5 @@ end
 # ╠═c7c57a3e-522a-11eb-0fda-91c3aff791d7
 # ╟─dd9e49c6-522a-11eb-2a68-0fc5a404a0cd
 # ╠═efe41c64-522a-11eb-20d9-f5b14b5c138c
-# ╠═f567037c-522a-11eb-263b-615400c1b9d5
 # ╠═f7443b06-522a-11eb-3801-5525ecada397
 # ╠═0b1b0448-522b-11eb-0264-9131eabe2525

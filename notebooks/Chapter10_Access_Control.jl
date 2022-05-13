@@ -1,11 +1,13 @@
 ### A Pluto.jl notebook ###
-# v0.12.18
+# v0.16.4
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 970efd92-5c85-11eb-180e-d508223139fe
 begin
+	import Pkg
+	Pkg.activate(Base.current_project())
 	using ReinforcementLearning
 	using Flux
 	using Statistics
@@ -76,14 +78,14 @@ First let's define a `DifferentialTDLearner`. It will be used to estimate Q valu
 """
 
 # ╔═╡ 30eb366e-5c87-11eb-12ad-09087fc4d788
-Base.@kwdef mutable struct DifferentialTDLearner{A<:AbstractApproximator} <: AbstractLearner
-    approximator::A
-    β::Float64
-    R̄::Float64 = 0.0
+begin
+	Base.@kwdef mutable struct DifferentialTDLearner{A<:AbstractApproximator} <: AbstractLearner
+		approximator::A
+		β::Float64
+		R̄::Float64 = 0.0
+	end
+	(L::DifferentialTDLearner)(env::AbstractEnv) = L.approximator(state(env))
 end
-
-# ╔═╡ 3f4df30e-5c87-11eb-290d-7b596c651f71
-(L::DifferentialTDLearner)(env::AbstractEnv) = L.approximator(state(env))
 
 # ╔═╡ 9c550740-5c87-11eb-11f1-63afc18d1229
 md"""
@@ -200,7 +202,7 @@ run(agent, world, StopAfterStep(2*10^6; is_show_progress=false))
 # ╔═╡ 3bdff022-5c8d-11eb-37ff-355f604d3f56
 begin
 
-	p = plot(legend=:bottomright)
+	p = plot(legend=:bottomright, xlabel="Number of free servers", ylabel="Differential value of best action")
 	for i in 1:length(PRIORITIES)
 		plot!(
 			[agent.policy.learner.approximator(TRANSFORMER[(CartesianIndex(n+1, i))]) |> maximum
@@ -215,7 +217,6 @@ end
 # ╠═970efd92-5c85-11eb-180e-d508223139fe
 # ╟─40f4eae6-5c87-11eb-1978-c9efd63427e9
 # ╠═30eb366e-5c87-11eb-12ad-09087fc4d788
-# ╠═3f4df30e-5c87-11eb-290d-7b596c651f71
 # ╟─9c550740-5c87-11eb-11f1-63afc18d1229
 # ╠═a223544c-5c87-11eb-1728-8f83730232e7
 # ╟─17a1328e-5c88-11eb-3603-01c70fd05502
