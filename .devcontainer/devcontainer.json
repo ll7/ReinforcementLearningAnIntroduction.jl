@@ -8,7 +8,8 @@
 		"julialang.language-julia-insider",
 		"JuliaComputing.pluto-vscode",
 		"haberdashPI.python-in-julia",
-		"GitHub.copilot"],
+		"GitHub.copilot",
+		"ms-toolsai.jupyter"],
 	"postCreateCommand": "/julia-devcontainer-scripts/postcreate.jl",
 	"remoteUser": "vscode"
 }
